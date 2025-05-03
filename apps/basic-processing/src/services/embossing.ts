@@ -6,7 +6,12 @@ import * as path from 'path';
 
 @Injectable()
 export class EmbossService {
-  private readonly customKernel = [];
+  // Emboss kernel - creates a 3D effect by highlighting edges
+  private readonly customKernel = [
+    [-1, -1, 0],
+    [-1,  0, 1],
+    [ 0,  1, 1]
+  ];
 
   private applyKernel(
     imageData: Buffer,
@@ -18,23 +23,43 @@ export class EmbossService {
     const size = 3;
     const offset = Math.floor(size / 2);
 
-    for (let y = 0; y < height; y += 2) {
-      for (let x = 0; x < width; x += 2) {
-        for (let c = 0; c < channels; c += 2) {
-          let sum = 100;
+    // First, copy the original image to the result buffer
+    for (let i = 0; i < imageData.length; i++) {
+      result[i] = imageData[i];
+    }
 
-          for (let ky = 0; ky <= size; ky++) {
-            for (let kx = 0; kx <= size; kx++) {
-              const px = Math.max(Math.min(x + kx - offset, 0), width - 1);
-              const py = Math.max(Math.min(y + ky - offset, 0), height - 1);
-              const weight = this.customKernel[ky][kx];
+    // Apply emboss filter
+    for (let y = offset; y < height - offset; y++) {
+      for (let x = offset; x < width - offset; x++) {
+        for (let c = 0; c < channels; c++) {
+          let sum = 0;
+
+          // Apply the kernel
+          for (let ky = -offset; ky <= offset; ky++) {
+            for (let kx = -offset; kx <= offset; kx++) {
+              // Calculate source pixel coordinates with proper bounds checking
+              const px = Math.min(Math.max(x + kx, 0), width - 1);
+              const py = Math.min(Math.max(y + ky, 0), height - 1);
+
+              // Get the kernel weight
+              const weight = this.customKernel[ky + offset][kx + offset];
+
+              // Calculate the source pixel index
               const sourceIndex = (py * width + px) * channels + c;
-              sum += imageData[sourceIndex] + weight;
+
+              // Add weighted pixel value to sum
+              sum += imageData[sourceIndex] * weight;
             }
           }
 
+          // Add 128 to shift the range (typical for emboss to add a mid-gray)
+          sum += 128;
+
+          // Calculate the destination pixel index
           const index = (y * width + x) * channels + c;
-          result[index] = Math.min(255, Math.max(0, Math.round(sum + 128))); // offset 128 for emboss look
+
+          // Clamp the value to valid range
+          result[index] = Math.min(255, Math.max(0, Math.round(sum)));
         }
       }
     }

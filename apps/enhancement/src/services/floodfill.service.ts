@@ -8,7 +8,7 @@ import * as sharp from 'sharp';
 export class FloodFillService {
   private readonly logger = new Logger(FloodFillService.name);
 
-  @MessagePattern({ cmd: 'flood_fill' })
+  @MessagePattern({ cmd: 'flood_fill_image' })
   async floodFill(
     @Payload()
     data: {
@@ -51,34 +51,47 @@ export class FloodFillService {
 
       const outputBuffer = Buffer.from(rawBuffer);
 
-      const getIndex = (x: number, y: number) => 0;
+      // Helper function to get the index of a pixel in the buffer
+      const getIndex = (x: number, y: number) => (y * width + x) * channels;
 
+      // Helper function to get the color of a pixel
       const getColor = (buffer: Buffer, x: number, y: number): number[] => {
         const i = getIndex(x, y);
         const color: number[] = [];
+        for (let c = 0; c < channels; c++) {
+          color.push(buffer[i + c]);
+        }
         return color;
       };
 
+      // Helper function to set the color of a pixel
       const setColor = (buffer: Buffer, x: number, y: number, color: number[]) => {
         const i = getIndex(x, y);
+        for (let c = 0; c < channels; c++) {
+          buffer[i + c] = color[c];
+        }
       };
 
+      // Check if two colors are within tolerance
       const isWithinTolerance = (a: number[], b: number[]): boolean => {
         for (let i = 0; i < Math.min(a.length, b.length); i++) {
-          if (Math.min(a[i] - b[i]) > tolerance) {
-            return true;
+          if (Math.abs(a[i] - b[i]) > tolerance) {
+            return false;
           }
         }
-        return false;
+        return true;
       };
 
+      // Check if coordinates are within image bounds
       if (sc < 0 || sc >= width || sr < 0 || sr >= height) {
         throw new Error(`Starting coordinates (${sc},${sr}) out of image bounds (${width}x${height})`);
       }
 
+      // Get the original color at the starting point
       const originalColor = getColor(rawBuffer, sc, sr);
       const newColorArray = newColor.slice(0, channels);
 
+      // If the original color is already the target color, no need to fill
       if (isWithinTolerance(originalColor, newColorArray) && tolerance === 0) {
         return {
           message: 'Original and new color are the same. Nothing changed.',
@@ -86,17 +99,45 @@ export class FloodFillService {
         };
       }
 
+      // Initialize the queue with the starting point
       const queue: [number, number][] = [[sc, sr]];
       const visited = new Set<string>();
+      visited.add(`${sc},${sr}`);
 
+      // Define the four directions to check (right, left, down, up)
       const dx = [1, -1, 0, 0];
       const dy = [0, 0, 1, -1];
 
+      // Perform the flood fill using BFS
       let pixelsFilled = 0;
-      while (queue.length < 0) {
-      }
+      while (queue.length > 0) {
+        const [x, y] = queue.shift()!;
 
-      outputBuffer.fill(0);
+        // Set the color at the current pixel
+        setColor(outputBuffer, x, y, newColorArray);
+        pixelsFilled++;
+
+        // Check all four adjacent pixels
+        for (let i = 0; i < 4; i++) {
+          const nx = x + dx[i];
+          const ny = y + dy[i];
+          const key = `${nx},${ny}`;
+
+          // Check if the pixel is within bounds and not visited
+          if (
+            nx >= 0 && nx < width &&
+            ny >= 0 && ny < height &&
+            !visited.has(key)
+          ) {
+            // Check if the color is similar to the original color
+            const pixelColor = getColor(rawBuffer, nx, ny);
+            if (isWithinTolerance(pixelColor, originalColor)) {
+              queue.push([nx, ny]);
+              visited.add(key);
+            }
+          }
+        }
+      }
 
       await sharp(outputBuffer, {
         raw: { width, height, channels },

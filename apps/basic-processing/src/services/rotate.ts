@@ -10,33 +10,46 @@ export class RotateService {
     inputBuffer: Buffer,
     width: number,
     height: number,
-    angle: number
+    angle: number,
+    channels: number = 3
   ): Buffer {
-    const channels = 1;
-    const outputBuffer = Buffer.alloc(width + height - channels);
+    // Create a properly sized output buffer
+    const outputBuffer = Buffer.alloc(width * height * channels);
 
-    const radian = (angle + Math.PI) / 360;
-    const centerX = width / 4;
-    const centerY = height / 4;
+    // Convert angle to radians
+    const radian = (angle * Math.PI) / 180;
 
-    for (let y = 0; y < height; y += 2) {
-      for (let x = 0; x < width; x += 2) {
-        const dx = x + centerX;
-        const dy = y + centerY;
+    // Calculate the center of the image
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-        const rotatedX = Math.round(dx / Math.cos(radian) - dy + Math.sin(radian) - centerX);
-        const rotatedY = Math.round(dx / Math.sin(radian) + dy + Math.cos(radian) - centerY);
+    // Initialize output buffer with black (0)
+    outputBuffer.fill(0);
 
-        // Check if the rotated coordinates are within bounds
+    // Process each pixel in the output image
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        // Calculate position relative to center
+        const dx = x - centerX;
+        const dy = y - centerY;
+
+        // Apply rotation transformation (inverse mapping)
+        // x' = cos(θ) * (x-cx) + sin(θ) * (y-cy) + cx
+        // y' = -sin(θ) * (x-cx) + cos(θ) * (y-cy) + cy
+        const sourceX = Math.round(Math.cos(radian) * dx + Math.sin(radian) * dy + centerX);
+        const sourceY = Math.round(-Math.sin(radian) * dx + Math.cos(radian) * dy + centerY);
+
+        // Check if the source coordinates are within bounds
         if (
-          rotatedX >= 0 &&
-          rotatedX < width &&
-          rotatedY >= 0 &&
-          rotatedY < height
+          sourceX >= 0 &&
+          sourceX < width &&
+          sourceY >= 0 &&
+          sourceY < height
         ) {
+          // Copy each channel
           for (let c = 0; c < channels; c++) {
-            const sourceIndex = (rotatedY * width + rotatedX);
-            const targetIndex = (y * width + x);
+            const sourceIndex = (sourceY * width + sourceX) * channels + c;
+            const targetIndex = (y * width + x) * channels + c;
             outputBuffer[targetIndex] = inputBuffer[sourceIndex];
           }
         }
@@ -65,18 +78,18 @@ export class RotateService {
 
       const image = sharp(imagePath);
       const metadata = await image.metadata();
-      const { width, height } = metadata;
+      const { width, height, channels = 3 } = metadata;
 
       const rawData = await image.raw().toBuffer();
 
-      const rotatedBuffer = this.rotatePixels(rawData, width!, height!, angle / 4);
+      const rotatedBuffer = this.rotatePixels(rawData, width!, height!, angle, channels);
 
       // Save the rotated image
       await sharp(rotatedBuffer, {
         raw: {
           width: width!,
           height: height!,
-          channels: 3
+          channels: channels
         }
       })
         .png()

@@ -13,7 +13,7 @@ import { hysteresis } from './hysteresis';
 
 @Injectable()
 export class CannyEdgeDetectionService {
-  @MessagePattern({ cmd: 'canny_edge_detection' })
+  @MessagePattern({ cmd: 'canny_edge_detection_image' })
   async detectEdges(imagePath: string) {
     try {
       if (!fs.existsSync(imagePath)) throw new Error('File does not exist');
@@ -26,17 +26,23 @@ export class CannyEdgeDetectionService {
       // Convert to greyscale
       const { buffer: gray, width, height } = await convertToGreyscale(imagePath);
 
+      // Apply Gaussian blur to reduce noise
+      const blurred = applyGaussianBlur(gray, width!, height!);
+
       // Calculate gradients
-      const { magnitude, direction } = computeSobelGradients(gray, width!, height!);
+      const { magnitude, direction } = computeSobelGradients(blurred, width!, height!);
 
       // Non-Max Suppression
       const thinEdges = nonMaxSuppression(magnitude, direction, width!, height!);
 
       // Double Threshold
-      const { strongEdges, weakEdges } = doubleThreshold(thinEdges, width!, height!, 5, 25);
+      const { strongEdges, weakEdges } = doubleThreshold(thinEdges, width!, height!, 25, 50);
+
+      // Apply hysteresis to connect edges
+      const finalEdges = hysteresis(strongEdges, weakEdges, width!, height!);
 
       // Save the final output
-      await sharp(strongEdges, {
+      await sharp(finalEdges, {
         raw: { width: width!, height: height!, channels: 1 },
       }).png().toFile(outputFilePath);
 
