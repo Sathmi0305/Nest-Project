@@ -66,20 +66,20 @@ export class ResizeService {
     const outputBuffer = Buffer.alloc(outputWidth * outputHeight * channels);
 
     // Calculate scaling factors
-    const xRatio = (inputWidth - 1) / (outputWidth - 1);
-    const yRatio = (inputHeight - 1) / (outputHeight - 1);
+    const xScale = inputWidth / outputWidth;
+    const yScale = inputHeight / outputHeight;
 
     for (let y = 0; y < outputHeight; y++) {
       for (let x = 0; x < outputWidth; x++) {
-        // Calculate the source position
-        const srcX = x * xRatio;
-        const srcY = y * yRatio;
+        // Calculate the source position with centered sampling
+        const srcX = (x + 0.5) * xScale - 0.5;
+        const srcY = (y + 0.5) * yScale - 0.5;
 
         // Get the four surrounding pixels
-        const x1 = Math.floor(srcX);
-        const y1 = Math.floor(srcY);
-        const x2 = Math.min(x1 + 1, inputWidth - 1);
-        const y2 = Math.min(y1 + 1, inputHeight - 1);
+        const x1 = Math.max(Math.floor(srcX), 0);
+        const y1 = Math.max(Math.floor(srcY), 0);
+        const x2 = Math.min(Math.ceil(srcX), inputWidth - 1);
+        const y2 = Math.min(Math.ceil(srcY), inputHeight - 1);
 
         // Calculate interpolation weights
         const xWeight = srcX - x1;

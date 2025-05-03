@@ -10,9 +10,18 @@ export class ContrastService {
   private applyContrast(imageData: Buffer, width: number, height: number, channels: number, contrast: number): Buffer {
     const result = Buffer.alloc(imageData.length);
 
-    // Normalize contrast to a reasonable range
-    // Where 0 is no change, negative decreases contrast, positive increases contrast
-    const factor = contrast / 100;
+    // Convert contrast percentage to factor
+    // For contrast=0, factor=1 (no change)
+    // For contrast>0, factor>1 (increase contrast)
+    // For contrast<0, factor<1 (decrease contrast)
+    const factor = (contrast + 100) / 100;
+
+    // Calculate average luminance for the image
+    let sum = 0;
+    for (let i = 0; i < imageData.length; i++) {
+      sum += imageData[i];
+    }
+    const avgLuminance = Math.round(sum / imageData.length);
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -23,8 +32,8 @@ export class ContrastService {
           // Get the pixel value
           const pixel = imageData[pixelIndex];
 
-          // Apply contrast adjustment formula: factor * (pixel - 128) + 128
-          const newValue = factor * (pixel - 128) + 128;
+          // Apply contrast adjustment formula: avgLuminance + factor * (pixel - avgLuminance)
+          const newValue = avgLuminance + factor * (pixel - avgLuminance);
 
           // Clamp the value between 0 and 255
           result[pixelIndex] = Math.max(0, Math.min(255, Math.round(newValue)));

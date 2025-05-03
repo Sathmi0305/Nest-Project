@@ -2,18 +2,27 @@
 import { Injectable } from '@nestjs/common';
 import * as sharp from 'sharp';
 import { MessagePattern } from '@nestjs/microservices';
-import { applyConvolution } from '../../../common/utils/convolution';
 import * as fs from 'fs';
 import * as path from 'path';
 
 @Injectable()
 export class NegativeService {
-  // Kernel for negative effect - using a simple inversion method
-  private readonly kernel = [
-    [-1, -1, -1],
-    [-1, -1, -1],
-    [-1, -1, -1]
-  ];
+  private createNegativeBuffer(inputBuffer: Buffer, width: number, height: number, channels: number): Buffer {
+    const outputBuffer = Buffer.alloc(inputBuffer.length);
+
+    // Process each pixel
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        for (let c = 0; c < channels; c++) {
+          const pixelIndex = (y * width + x) * channels + c;
+          // Invert the pixel value: 255 - original value
+          outputBuffer[pixelIndex] = 255 - inputBuffer[pixelIndex];
+        }
+      }
+    }
+
+    return outputBuffer;
+  }
 
   @MessagePattern({ cmd: 'create_negative' })
   async createNegative(imagePath: string) {
@@ -36,7 +45,7 @@ export class NegativeService {
 
       const rawData = await image.raw().toBuffer();
 
-      const negativeBuffer = applyConvolution(rawData, width!, height!, channels, this.kernel);
+      const negativeBuffer = this.createNegativeBuffer(rawData, width!, height!, channels);
 
       await sharp(negativeBuffer, {
         raw: {
@@ -50,7 +59,7 @@ export class NegativeService {
 
       return {
         success: true,
-        message: 'Negative image created using convolution method',
+        message: 'Negative image created successfully',
         savedImagePath: outputFilePath,
       };
     } catch (error) {

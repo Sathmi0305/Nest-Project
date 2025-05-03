@@ -13,6 +13,13 @@ export class EmbossService {
     [ 0,  1, 2]
   ];
 
+  // Standard emboss kernel from documentation
+  private readonly standardKernel = [
+    [-1, -1, 0],
+    [-1,  0, 1],
+    [ 0,  1, 1]
+  ];
+
   private applyKernel(
     imageData: Buffer,
     width: number,
@@ -42,7 +49,7 @@ export class EmbossService {
               const py = Math.min(Math.max(y + ky, 0), height - 1);
 
               // Get the kernel weight
-              const weight = this.customKernel[ky + offset][kx + offset];
+              const weight = this.standardKernel[ky + offset][kx + offset];
 
               // Calculate the source pixel index
               const sourceIndex = (py * width + px) * channels + c;

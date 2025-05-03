@@ -65,6 +65,6 @@ function convolve(input: Buffer, width: number, height: number, kernel: number[]
 
 // Exported blur function
 export function applyGaussianBlur(input: Buffer, width: number, height: number): Buffer {
-  const kernel = generateGaussianKernel(5, 1.0); // 5x5 kernel, sigma = 1.0
+  const kernel = generateGaussianKernel(5, 1.4); // 5x5 kernel, sigma = 1.4 (better for edge detection)
   return convolve(input, width, height, kernel);
 }
