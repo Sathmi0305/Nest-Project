@@ -10,9 +10,9 @@ export class ContrastService {
   private applyContrast(imageData: Buffer, width: number, height: number, channels: number, contrast: number): Buffer {
     const result = Buffer.alloc(imageData.length);
 
-    // Normalize contrast to a reasonable range (0-2 is typical)
-    // Where 1 is no change, <1 decreases contrast, >1 increases contrast
-    const factor = (contrast / 100) + 1;
+    // Normalize contrast to a reasonable range
+    // Where 0 is no change, negative decreases contrast, positive increases contrast
+    const factor = contrast / 100;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {

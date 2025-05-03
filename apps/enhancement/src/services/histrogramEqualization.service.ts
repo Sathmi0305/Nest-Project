@@ -54,7 +54,11 @@ export class HistogramEqualizationService {
       for (let i = 0; i < raw.length; i++) {
         const originalIntensity = raw[i];
         // Apply the histogram equalization formula: h(v) = round((cdf(v) - cdfMin) / (totalPixels - cdfMin) * (L - 1))
-        const newIntensity = Math.round(((cdf[originalIntensity] - cdfMin) / (totalPixels - cdfMin)) * (L - 1));
+        // Make sure we don't divide by zero
+        const denominator = totalPixels - cdfMin;
+        const newIntensity = denominator === 0
+          ? originalIntensity
+          : Math.round(((cdf[originalIntensity] - cdfMin) / denominator) * (L - 1));
         equalized[i] = newIntensity;
       }
 

@@ -18,7 +18,7 @@ export class HarrisSharpService {
       thresh?: number;     // Response threshold (default 1e-5)
     },
   ) {
-    const { imagePath, k = 0.04, windowSize = 3, thresh = 1e-5 } = data;
+    const { imagePath, k = 0.06, windowSize = 3, thresh = 0.01 } = data;
     if (!fs.existsSync(imagePath)) {
       return { error: 'Image not found', statusCode: 404 };
     }
@@ -128,9 +128,9 @@ export class HarrisSharpService {
     // Compute R and collect corners
     const R = new Float32Array(width * height);
     for (let i = 0; i < R.length; i++) {
-      const det = Sxx[i] * Syy[i] - Sxy[i];
+      const det = Sxx[i] * Syy[i] - Sxy[i] * Sxy[i]; // Correct determinant calculation
       const trace = Sxx[i] + Syy[i];
-      R[i] = det - k * trace;
+      R[i] = det - k * trace * trace; // Apply k to squared trace for better results
     }
 
     // Non-maximum suppression + threshold

@@ -8,9 +8,9 @@ import * as path from 'path';
 export class EmbossService {
   // Emboss kernel - creates a 3D effect by highlighting edges
   private readonly customKernel = [
-    [-1, -1, 0],
-    [-1,  0, 1],
-    [ 0,  1, 1]
+    [-2, -1, 0],
+    [-1,  1, 1],
+    [ 0,  1, 2]
   ];
 
   private applyKernel(

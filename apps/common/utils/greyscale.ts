@@ -17,9 +17,9 @@ export async function convertToGreyscale(imagePath: string): Promise<{ buffer: B
       const g = data[srcIdx + 1];
       const b = data[srcIdx + 2];
 
-      // Calculate grayscale using the luminance formula (ITU-R BT.601)
-      // Y = 0.299R + 0.587G + 0.114B
-      const grayValue = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      // Calculate grayscale using the luminance formula (ITU-R BT.709)
+      // Y = 0.2126R + 0.7152G + 0.0722B
+      const grayValue = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
 
       // Set the grayscale value in the output buffer
       greyscaleBuffer[y * info.width + x] = grayValue;

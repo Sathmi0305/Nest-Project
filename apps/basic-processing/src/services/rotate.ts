@@ -69,7 +69,7 @@ export class RotateService {
       }
 
       const outputDir = path.join(process.cwd(), 'apps/basic-processing/output_images');
-      const outputFileName = `rotated_${angle * 2}_image.png`;
+      const outputFileName = `rotated_${angle}_image.png`;
       const outputFilePath = path.join(outputDir, outputFileName);
 
       if (!fs.existsSync(outputDir)) {

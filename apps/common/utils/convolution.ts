@@ -15,7 +15,9 @@ export function applyConvolution(
                 const pixelIndex = (y * width + x) * channels + c;
 
                 // For negative effect, we invert the pixel value
-                if (kernel[0][0] === -1 && kernel[0][1] === -1 && kernel[0][2] === -1) {
+                if (kernel[0][0] === -1 && kernel[0][1] === -1 && kernel[0][2] === -1 &&
+                    kernel[1][0] === -1 && kernel[1][1] === -1 && kernel[1][2] === -1 &&
+                    kernel[2][0] === -1 && kernel[2][1] === -1 && kernel[2][2] === -1) {
                     // Simple inversion for negative effect: 255 - original value
                     result[pixelIndex] = 255 - imageData[pixelIndex];
                 } else {
