@@ -22,7 +22,16 @@ export class HistogramEqualizationService {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      const { buffer: raw, width, height } = await convertToGreyscale(imagePath);
+      // Use Sharp's built-in grayscale function to ensure consistent results
+      // This uses the ITU-R BT.601 standard (Y = 0.299R + 0.587G + 0.114B)
+      const grayscaleImage = await sharp(imagePath)
+        .grayscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      const raw = grayscaleImage.data;
+      const width = grayscaleImage.info.width;
+      const height = grayscaleImage.info.height;
 
       // Calculate histogram
       const histogram = new Array(256).fill(0);
@@ -62,10 +71,11 @@ export class HistogramEqualizationService {
         equalized[i] = newIntensity;
       }
 
+      // Use Sharp to save the equalized image
       await sharp(equalized, {
         raw: {
-          width: width!,
-          height: height!,
+          width: width,
+          height: height,
           channels: 1,
         },
       })

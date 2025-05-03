@@ -108,7 +108,8 @@ export class FloodFillService {
       const dx = [1, -1, 0, 0];
       const dy = [0, 0, 1, -1];
 
-      // Perform the flood fill using BFS
+      // Perform the flood fill using BFS (Breadth-First Search)
+      // This is the standard algorithm for flood fill as described in computer science literature
       let pixelsFilled = 0;
       while (queue.length > 0) {
         const [x, y] = queue.shift()!;
@@ -117,7 +118,8 @@ export class FloodFillService {
         setColor(outputBuffer, x, y, newColorArray);
         pixelsFilled++;
 
-        // Check all four adjacent pixels
+        // Check all four adjacent pixels (up, down, left, right)
+        // This is the 4-connected approach which is standard for flood fill
         for (let i = 0; i < 4; i++) {
           const nx = x + dx[i];
           const ny = y + dy[i];
