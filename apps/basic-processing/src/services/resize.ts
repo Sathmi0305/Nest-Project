@@ -27,7 +27,7 @@ export class ResizeService {
       const inputImage = await fs.promises.readFile(imagePath);
       const { data: inputBuffer, info: inputInfo } = await sharp(inputImage).raw().toBuffer({ resolveWithObject: true });
 
-      const resizedBuffer = this.bilinearInterpolation(inputBuffer, inputInfo.height,  inputInfo.width, height, width);
+      const resizedBuffer = this.bilinearInterpolation(inputBuffer, inputInfo.height, inputInfo.width, height, width);
 
       // Save the resized image
       await sharp(resizedBuffer, {
@@ -56,12 +56,53 @@ export class ResizeService {
 
   private bilinearInterpolation(
     inputBuffer: Buffer,
-    inputWidth: number,
     inputHeight: number,
-    outputWidth: number,
-    outputHeight: number
+    inputWidth: number,
+    outputHeight: number,
+    outputWidth: number
   ): Buffer {
-    const outputBuffer = Buffer.alloc(outputWidth * outputHeight * 3);
+    // Determine the number of channels (assuming RGB or RGBA)
+    const channels = inputBuffer.length / (inputWidth * inputHeight);
+    const outputBuffer = Buffer.alloc(outputWidth * outputHeight * channels);
+
+    // Calculate scaling factors
+    const xRatio = inputWidth / outputWidth;
+    const yRatio = inputHeight / outputHeight;
+
+    for (let y = 0; y < outputHeight; y++) {
+      for (let x = 0; x < outputWidth; x++) {
+        // Calculate the source position
+        const srcX = x * xRatio;
+        const srcY = y * yRatio;
+
+        // Get the four surrounding pixels
+        const x1 = Math.floor(srcX);
+        const y1 = Math.floor(srcY);
+        const x2 = Math.min(Math.ceil(srcX), inputWidth - 1);
+        const y2 = Math.min(Math.ceil(srcY), inputHeight - 1);
+
+        // Calculate interpolation weights
+        const xWeight = srcX - x1;
+        const yWeight = srcY - y1;
+
+        // For each channel
+        for (let c = 0; c < channels; c++) {
+          // Get the four pixel values for this channel
+          const topLeft = inputBuffer[(y1 * inputWidth + x1) * channels + c];
+          const topRight = inputBuffer[(y1 * inputWidth + x2) * channels + c];
+          const bottomLeft = inputBuffer[(y2 * inputWidth + x1) * channels + c];
+          const bottomRight = inputBuffer[(y2 * inputWidth + x2) * channels + c];
+
+          // Perform bilinear interpolation
+          const top = topLeft * (1 - xWeight) + topRight * xWeight;
+          const bottom = bottomLeft * (1 - xWeight) + bottomRight * xWeight;
+          const pixel = Math.round(top * (1 - yWeight) + bottom * yWeight);
+
+          // Set the output pixel
+          outputBuffer[(y * outputWidth + x) * channels + c] = pixel;
+        }
+      }
+    }
 
     return outputBuffer;
   }
